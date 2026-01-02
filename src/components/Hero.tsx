@@ -1,4 +1,4 @@
-import { ArrowRight, Microscope, Dna, FlaskConical } from 'lucide-react';
+import { ArrowRight, Zap, Activity, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import DNAHelix from './DNAHelix';
@@ -8,41 +8,39 @@ const Hero = () => {
     <section className="relative min-h-screen flex items-center hero-gradient overflow-hidden pt-20">
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Floating particles */}
-        <div className="absolute top-20 left-10 w-3 h-3 bg-dna-accent/40 rounded-full animate-float" />
-        <div className="absolute top-40 right-20 w-4 h-4 bg-dna-primary/30 rounded-full animate-float-delayed" />
-        <div className="absolute bottom-40 left-1/4 w-2 h-2 bg-dna-secondary/50 rounded-full animate-float" />
-        <div className="absolute top-1/3 right-1/3 w-5 h-5 bg-dna-glow/20 rounded-full animate-pulse-glow" />
+        {/* Animated grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--primary)/0.05)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--primary)/0.05)_1px,transparent_1px)] bg-[size:80px_80px]" />
         
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:60px_60px] opacity-30" />
+        {/* Glowing orbs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse-glow" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/10 rounded-full blur-[100px] animate-pulse-glow" style={{ animationDelay: '1.5s' }} />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Content */}
           <div className="space-y-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary rounded-full text-sm text-secondary-foreground animate-fade-up">
-              <FlaskConical className="h-4 w-4" />
-              <span>Advanced Bioinformatics Solutions</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm neon-border bg-card/50 backdrop-blur-sm animate-fade-up">
+              <Zap className="h-4 w-4 text-primary" />
+              <span className="text-foreground">Advanced Bioinformatics Solutions</span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold leading-tight animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-heading font-bold leading-tight animate-fade-up" style={{ animationDelay: '0.1s' }}>
               Unlock the Power of{' '}
-              <span className="gradient-text">Genomic Data</span>{' '}
+              <span className="gradient-text neon-text">Genomic Data</span>{' '}
               Analysis
             </h1>
             
-            <p className="text-lg text-muted-foreground max-w-xl animate-fade-up" style={{ animationDelay: '0.2s' }}>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-xl animate-fade-up" style={{ animationDelay: '0.2s' }}>
               BioDaCa provides cutting-edge bioinformatics services including RNA-Seq analysis, 
-              Sanger sequencing, and comprehensive genomic data solutions for researchers worldwide.
+              Sanger sequencing, and comprehensive genomic data solutions.
             </p>
 
             <div className="flex flex-wrap gap-4 animate-fade-up" style={{ animationDelay: '0.3s' }}>
-              <Link to="/auth?mode=signup">
-                <Button variant="hero" size="xl">
-                  Start Your Analysis
-                  <ArrowRight className="ml-2 h-5 w-5" />
+              <Link to="/dashboard">
+                <Button variant="hero" size="xl" className="group">
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
               <a href="#services">
@@ -54,46 +52,57 @@ const Hero = () => {
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-6 pt-8 animate-fade-up" style={{ animationDelay: '0.4s' }}>
-              <div className="space-y-1">
-                <p className="text-3xl font-heading font-bold text-primary">500+</p>
-                <p className="text-sm text-muted-foreground">Projects Completed</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-heading font-bold text-primary">50+</p>
-                <p className="text-sm text-muted-foreground">Research Partners</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-heading font-bold text-primary">99%</p>
-                <p className="text-sm text-muted-foreground">Accuracy Rate</p>
-              </div>
+              {[
+                { icon: Database, value: '500+', label: 'Projects' },
+                { icon: Activity, value: '50+', label: 'Partners' },
+                { icon: Zap, value: '99%', label: 'Accuracy' },
+              ].map((stat, index) => (
+                <div key={index} className="glass-card rounded-xl p-4 text-center">
+                  <stat.icon className="h-5 w-5 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-heading font-bold gradient-text">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Visual */}
+          {/* DNA Visual - Right Side */}
           <div className="relative hidden lg:flex justify-center items-center">
-            <div className="absolute w-80 h-80 bg-dna-primary/10 rounded-full blur-3xl animate-pulse-glow" />
-            <div className="absolute w-60 h-60 bg-dna-accent/10 rounded-full blur-2xl animate-float" />
+            {/* Large background glow */}
+            <div className="absolute w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px]" />
             
-            <div className="relative">
+            {/* DNA Helix centered */}
+            <div className="relative z-10">
               <DNAHelix />
-              
-              {/* Floating icons */}
-              <div className="absolute -left-20 top-20 glass-card p-4 rounded-xl animate-float">
-                <Microscope className="h-8 w-8 text-primary" />
+            </div>
+
+            {/* Floating tech badges */}
+            <div className="absolute top-10 -left-10 glass-card px-4 py-3 rounded-xl animate-float">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                <span className="text-sm font-medium">RNA-Seq</span>
               </div>
-              <div className="absolute -right-16 top-1/2 glass-card p-4 rounded-xl animate-float-delayed">
-                <Dna className="h-8 w-8 text-dna-accent" />
+            </div>
+            
+            <div className="absolute top-1/3 -right-5 glass-card px-4 py-3 rounded-xl animate-float-delayed">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+                <span className="text-sm font-medium">Genomics</span>
               </div>
-              <div className="absolute -left-10 bottom-20 glass-card p-4 rounded-xl animate-float">
-                <FlaskConical className="h-8 w-8 text-dna-secondary" />
+            </div>
+            
+            <div className="absolute bottom-20 -left-5 glass-card px-4 py-3 rounded-xl animate-float">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-dna-accent rounded-full animate-pulse" />
+                <span className="text-sm font-medium">Analysis</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+      {/* Bottom gradient fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/50 to-transparent" />
     </section>
   );
 };
