@@ -38,33 +38,33 @@ const Footer = () => {
                 <span className="text-[10px] text-background/60 -mt-1">Creating your task simple</span>
               </div>
             </Link>
-            <p className="text-background/70 mb-6 max-w-sm">
+            <p className="text-foreground/70 mb-6 max-w-sm">
               Empowering researchers with cutting-edge bioinformatics solutions. 
               Transform your genomic data into actionable insights.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-lg bg-background/10 flex items-center justify-center hover:bg-background/20 transition-colors">
-                <Twitter className="h-5 w-5" />
+              <a href="#" className="w-10 h-10 rounded-lg bg-foreground/10 flex items-center justify-center hover:bg-foreground/20 transition-colors">
+                <Twitter className="h-5 w-5 text-foreground" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-lg bg-background/10 flex items-center justify-center hover:bg-background/20 transition-colors">
-                <Linkedin className="h-5 w-5" />
+              <a href="#" className="w-10 h-10 rounded-lg bg-foreground/10 flex items-center justify-center hover:bg-foreground/20 transition-colors">
+                <Linkedin className="h-5 w-5 text-foreground" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-lg bg-background/10 flex items-center justify-center hover:bg-background/20 transition-colors">
-                <Github className="h-5 w-5" />
+              <a href="#" className="w-10 h-10 rounded-lg bg-foreground/10 flex items-center justify-center hover:bg-foreground/20 transition-colors">
+                <Github className="h-5 w-5 text-foreground" />
               </a>
-              <a href="mailto:contact@biodaca.com" className="w-10 h-10 rounded-lg bg-background/10 flex items-center justify-center hover:bg-background/20 transition-colors">
-                <Mail className="h-5 w-5" />
+              <a href="mailto:contact@biodaca.com" className="w-10 h-10 rounded-lg bg-foreground/10 flex items-center justify-center hover:bg-foreground/20 transition-colors">
+                <Mail className="h-5 w-5 text-foreground" />
               </a>
             </div>
           </div>
 
           {/* Links */}
           <div>
-            <h4 className="font-heading font-semibold mb-4">Services</h4>
+            <h4 className="font-heading font-semibold mb-4 text-foreground">Services</h4>
             <ul className="space-y-3">
               {footerLinks.services.map((link) => (
                 <li key={link.name}>
-                  <a href={link.href} className="text-background/70 hover:text-dna-glow transition-colors">
+                  <a href={link.href} className="text-foreground/70 hover:text-dna-glow transition-colors">
                     {link.name}
                   </a>
                 </li>
@@ -73,11 +73,11 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-heading font-semibold mb-4">Company</h4>
+            <h4 className="font-heading font-semibold mb-4 text-foreground">Company</h4>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <a href={link.href} className="text-background/70 hover:text-dna-glow transition-colors">
+                  <a href={link.href} className="text-foreground/70 hover:text-dna-glow transition-colors">
                     {link.name}
                   </a>
                 </li>
@@ -86,11 +86,11 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-heading font-semibold mb-4">Resources</h4>
+            <h4 className="font-heading font-semibold mb-4 text-foreground">Resources</h4>
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
                 <li key={link.name}>
-                  <a href={link.href} className="text-background/70 hover:text-dna-glow transition-colors">
+                  <a href={link.href} className="text-foreground/70 hover:text-dna-glow transition-colors">
                     {link.name}
                   </a>
                 </li>
@@ -100,18 +100,18 @@ const Footer = () => {
         </div>
 
         {/* Bottom */}
-        <div className="pt-8 border-t border-background/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-background/60 text-sm">
+        <div className="pt-8 border-t border-foreground/10 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-foreground/60 text-sm">
             © {currentYear} BioDaCa. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm">
-            <a href="#" className="text-background/60 hover:text-background transition-colors">
+            <a href="#" className="text-foreground/60 hover:text-foreground transition-colors">
               Privacy Policy
             </a>
-            <a href="#" className="text-background/60 hover:text-background transition-colors">
+            <a href="#" className="text-foreground/60 hover:text-foreground transition-colors">
               Terms of Service
             </a>
-            <a href="#" className="text-background/60 hover:text-background transition-colors">
+            <a href="#" className="text-foreground/60 hover:text-foreground transition-colors">
               Cookie Policy
             </a>
           </div>
