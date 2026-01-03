@@ -57,8 +57,8 @@ const Contact = () => {
                   </div>
                   <div>
                     <p className="font-medium mb-1">Email</p>
-                    <a href="mailto:contact@biodaca.com" className="text-muted-foreground hover:text-primary transition-colors">
-                      contact@biodaca.com
+                    <a href="mailto:biodaca1@gmail.com" className="text-muted-foreground hover:text-primary transition-colors">
+                      biodaca1@gmail.com
                     </a>
                   </div>
                 </div>
@@ -69,8 +69,8 @@ const Contact = () => {
                   </div>
                   <div>
                     <p className="font-medium mb-1">Phone</p>
-                    <a href="tel:+1234567890" className="text-muted-foreground hover:text-primary transition-colors">
-                      +1 (234) 567-890
+                    <a href="tel:+918093581983" className="text-muted-foreground hover:text-primary transition-colors">
+                      +91 8093581983
                     </a>
                   </div>
                 </div>
@@ -82,8 +82,7 @@ const Contact = () => {
                   <div>
                     <p className="font-medium mb-1">Address</p>
                     <p className="text-muted-foreground">
-                      123 Biotech Park, Research Avenue<br />
-                      Science City, SC 12345
+                      Raipur, Chhattisgarh, India
                     </p>
                   </div>
                 </div>
@@ -96,9 +95,8 @@ const Contact = () => {
                 Office Hours
               </h3>
               <div className="space-y-2 text-muted-foreground">
-                <p>Monday - Friday: 9:00 AM - 6:00 PM</p>
-                <p>Saturday: 10:00 AM - 2:00 PM</p>
-                <p>Sunday: Closed</p>
+                <p>Monday - Friday: 9:00 AM - 8:00 PM</p>
+                <p>Saturday - Sunday: Closed</p>
               </div>
             </div>
           </div>
