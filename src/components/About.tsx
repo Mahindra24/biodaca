@@ -1,4 +1,5 @@
 import { CheckCircle2, Users, Award, Clock } from 'lucide-react';
+import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 
 const features = [
   {
@@ -19,9 +20,11 @@ const features = [
 ];
 
 const About = () => {
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
+
   return (
     <section id="about" className="py-20 md:py-32 bg-background relative overflow-hidden">
-      <div className="container mx-auto px-4">
+      <div ref={ref} className={`container mx-auto px-4 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Content */}
           <div className="space-y-8">

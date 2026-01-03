@@ -4,8 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useScrollAnimation } from '@/hooks/use-scroll-animation';
 
 const Contact = () => {
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,7 +27,7 @@ const Contact = () => {
       <div className="absolute top-20 left-10 w-64 h-64 bg-dna-primary/5 rounded-full blur-3xl" />
       <div className="absolute bottom-20 right-10 w-80 h-80 bg-dna-accent/5 rounded-full blur-3xl" />
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div ref={ref} className={`container mx-auto px-4 relative z-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="inline-block px-4 py-1.5 bg-secondary text-secondary-foreground rounded-full text-sm font-medium mb-4">
