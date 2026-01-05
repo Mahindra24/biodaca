@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dna, Mail, Lock, User, ArrowLeft, Shield, Loader2 } from 'lucide-react';
+import { Dna, Mail, Lock, User, ArrowLeft, Shield, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
-type AuthMode = 'login' | 'signup' | 'admin';
+type AuthMode = 'login' | 'signup' | 'admin' | 'forgot' | 'reset';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -29,26 +30,41 @@ const Auth = () => {
 
   useEffect(() => {
     const modeParam = searchParams.get('mode');
-    if (modeParam === 'signup') {
+    const type = searchParams.get('type');
+    
+    if (type === 'recovery') {
+      setMode('reset');
+    } else if (modeParam === 'signup') {
       setMode('signup');
     } else if (modeParam === 'admin') {
       setMode('admin');
+    } else if (modeParam === 'forgot') {
+      setMode('forgot');
     }
   }, [searchParams]);
 
   useEffect(() => {
-    if (user && !authLoading) {
-      // Redirect authenticated users
-      if (isAdmin) {
-        navigate('/dashboard');
-      } else {
-        navigate('/dashboard');
-      }
+    if (user && !authLoading && mode !== 'reset') {
+      navigate('/dashboard');
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, isAdmin, authLoading, navigate, mode]);
 
   const validateForm = (): boolean => {
     try {
+      if (mode === 'forgot') {
+        emailSchema.parse(formData.email);
+        return true;
+      }
+      
+      if (mode === 'reset') {
+        passwordSchema.parse(formData.password);
+        if (formData.password !== formData.confirmPassword) {
+          toast.error('Passwords do not match');
+          return false;
+        }
+        return true;
+      }
+      
       emailSchema.parse(formData.email);
       passwordSchema.parse(formData.password);
       
@@ -68,10 +84,63 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: `${window.location.origin}/auth?type=recovery`,
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      
+      toast.success('Password reset link sent! Check your email.');
+      setMode('login');
+    } catch (error) {
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: formData.password,
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      
+      toast.success('Password updated successfully! You can now sign in.');
+      setMode('login');
+      setFormData({ ...formData, password: '', confirmPassword: '' });
+    } catch (error) {
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
+
+    if (mode === 'forgot') {
+      await handleForgotPassword();
+      return;
+    }
+
+    if (mode === 'reset') {
+      await handleResetPassword();
+      return;
+    }
     
     setLoading(true);
 
@@ -90,7 +159,6 @@ const Auth = () => {
         
         toast.success('Account created successfully! Redirecting...');
       } else {
-        // Login (user or admin)
         const { error } = await signIn(formData.email, formData.password);
         
         if (error) {
@@ -102,7 +170,6 @@ const Auth = () => {
           return;
         }
 
-        // For admin mode, check if user has admin role
         if (mode === 'admin') {
           const hasAdminRole = await checkIsAdmin();
           if (!hasAdminRole) {
@@ -166,39 +233,41 @@ const Auth = () => {
             </div>
           </div>
 
-          {/* Mode Tabs */}
-          <div className="flex gap-2 mb-8 p-1 bg-muted rounded-lg">
-            <button
-              onClick={() => setMode('login')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                mode === 'login' 
-                  ? 'bg-card shadow-sm text-foreground' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              User Login
-            </button>
-            <button
-              onClick={() => setMode('signup')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                mode === 'signup' 
-                  ? 'bg-card shadow-sm text-foreground' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Sign Up
-            </button>
-            <button
-              onClick={() => setMode('admin')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                mode === 'admin' 
-                  ? 'bg-card shadow-sm text-foreground' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Admin
-            </button>
-          </div>
+          {/* Mode Tabs - Hide for forgot/reset modes */}
+          {mode !== 'forgot' && mode !== 'reset' && (
+            <div className="flex gap-2 mb-8 p-1 bg-muted rounded-lg">
+              <button
+                onClick={() => setMode('login')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                  mode === 'login' 
+                    ? 'bg-card shadow-sm text-foreground' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                User Login
+              </button>
+              <button
+                onClick={() => setMode('signup')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                  mode === 'signup' 
+                    ? 'bg-card shadow-sm text-foreground' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Sign Up
+              </button>
+              <button
+                onClick={() => setMode('admin')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                  mode === 'admin' 
+                    ? 'bg-card shadow-sm text-foreground' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Admin
+              </button>
+            </div>
+          )}
 
           {/* Title */}
           <div className="text-center mb-6">
@@ -206,11 +275,15 @@ const Auth = () => {
               {mode === 'login' && 'Welcome Back'}
               {mode === 'signup' && 'Create Account'}
               {mode === 'admin' && 'Admin Login'}
+              {mode === 'forgot' && 'Reset Password'}
+              {mode === 'reset' && 'Set New Password'}
             </h1>
             <p className="text-muted-foreground text-sm">
               {mode === 'login' && 'Sign in to access your dashboard'}
               {mode === 'signup' && 'Start your bioinformatics journey'}
               {mode === 'admin' && 'Access the admin dashboard'}
+              {mode === 'forgot' && 'Enter your email to receive a reset link'}
+              {mode === 'reset' && 'Choose a new secure password'}
             </p>
           </div>
 
@@ -219,6 +292,16 @@ const Auth = () => {
             <div className="flex items-center justify-center gap-2 mb-6 py-2 px-4 bg-primary/10 rounded-lg">
               <Shield className="h-4 w-4 text-primary" />
               <span className="text-sm text-primary font-medium">Administrator Access</span>
+            </div>
+          )}
+
+          {/* Reset Password Badge */}
+          {(mode === 'forgot' || mode === 'reset') && (
+            <div className="flex items-center justify-center gap-2 mb-6 py-2 px-4 bg-primary/10 rounded-lg">
+              <KeyRound className="h-4 w-4 text-primary" />
+              <span className="text-sm text-primary font-medium">
+                {mode === 'forgot' ? 'Password Recovery' : 'Create New Password'}
+              </span>
             </div>
           )}
 
@@ -241,39 +324,45 @@ const Auth = () => {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  className="pl-10 bg-background"
-                  disabled={loading}
-                />
+            {mode !== 'reset' && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                    className="pl-10 bg-background"
+                    disabled={loading}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  className="pl-10 bg-background"
-                  disabled={loading}
-                />
+            {mode !== 'forgot' && (
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {mode === 'reset' ? 'New Password' : 'Password'}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    className="pl-10 bg-background"
+                    disabled={loading}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {mode === 'signup' && (
+            {(mode === 'signup' || mode === 'reset') && (
               <div>
                 <label className="block text-sm font-medium mb-2">Confirm Password</label>
                 <div className="relative">
@@ -293,19 +382,23 @@ const Auth = () => {
 
             {(mode === 'login' || mode === 'admin') && (
               <div className="flex justify-end">
-                <a href="#" className="text-sm text-primary hover:underline">
+                <button 
+                  type="button"
+                  onClick={() => setMode('forgot')}
+                  className="text-sm text-primary hover:underline"
+                >
                   Forgot password?
-                </a>
+                </button>
               </div>
             )}
 
             <Button variant="hero" size="lg" type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
+              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {mode === 'login' && (loading ? 'Signing In...' : 'Sign In')}
               {mode === 'signup' && (loading ? 'Creating Account...' : 'Create Account')}
               {mode === 'admin' && (loading ? 'Signing In...' : 'Admin Sign In')}
+              {mode === 'forgot' && (loading ? 'Sending...' : 'Send Reset Link')}
+              {mode === 'reset' && (loading ? 'Updating...' : 'Update Password')}
             </Button>
           </form>
 
@@ -332,6 +425,14 @@ const Auth = () => {
                 Not an admin?{' '}
                 <button onClick={() => setMode('login')} className="text-primary hover:underline font-medium">
                   User login
+                </button>
+              </>
+            )}
+            {(mode === 'forgot' || mode === 'reset') && (
+              <>
+                Remember your password?{' '}
+                <button onClick={() => setMode('login')} className="text-primary hover:underline font-medium">
+                  Back to login
                 </button>
               </>
             )}
