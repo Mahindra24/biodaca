@@ -1,14 +1,30 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
   Dna, LayoutDashboard, FileCode, BarChart3, 
   Settings, LogOut, Upload, Clock, CheckCircle,
-  FolderOpen, Bell, User, Menu, X
+  FolderOpen, Bell, User, Menu, X, Shield, Loader2
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, isAdmin, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Signed out successfully');
+    navigate('/auth');
+  };
 
   const stats = [
     { label: 'Total Projects', value: '12', icon: FolderOpen, change: '+2 this month' },
@@ -41,6 +57,22 @@ const Dashboard = () => {
       default: return 'bg-muted text-muted-foreground';
     }
   };
+
+  // Get display name from user metadata or email
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const userRole = isAdmin ? 'Administrator' : 'Researcher';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-muted/30 flex">
@@ -82,12 +114,10 @@ const Dashboard = () => {
 
         {/* Bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
-          <Link to="/auth">
-            <Button variant="ghost" className="w-full justify-start gap-3">
-              <LogOut className="h-5 w-5" />
-              Sign Out
-            </Button>
-          </Link>
+          <Button variant="ghost" className="w-full justify-start gap-3" onClick={handleSignOut}>
+            <LogOut className="h-5 w-5" />
+            Sign Out
+          </Button>
         </div>
       </aside>
 
@@ -117,11 +147,15 @@ const Dashboard = () => {
             </button>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-gradient-dna flex items-center justify-center">
-                <User className="h-5 w-5 text-primary-foreground" />
+                {isAdmin ? (
+                  <Shield className="h-5 w-5 text-primary-foreground" />
+                ) : (
+                  <User className="h-5 w-5 text-primary-foreground" />
+                )}
               </div>
               <div className="hidden sm:block">
-                <p className="text-sm font-medium">John Doe</p>
-                <p className="text-xs text-muted-foreground">Researcher</p>
+                <p className="text-sm font-medium">{displayName}</p>
+                <p className="text-xs text-muted-foreground">{userRole}</p>
               </div>
             </div>
           </div>
@@ -132,11 +166,17 @@ const Dashboard = () => {
           {/* Welcome */}
           <div className="mb-8">
             <h2 className="text-2xl font-heading font-bold mb-2">
-              Welcome back, John! 👋
+              Welcome back, {displayName}! 👋
             </h2>
             <p className="text-muted-foreground">
               Here's an overview of your bioinformatics projects and analysis.
             </p>
+            {isAdmin && (
+              <div className="inline-flex items-center gap-2 mt-3 px-3 py-1 bg-primary/10 rounded-full">
+                <Shield className="h-4 w-4 text-primary" />
+                <span className="text-sm text-primary font-medium">Admin Access Enabled</span>
+              </div>
+            )}
           </div>
 
           {/* Stats Grid */}
