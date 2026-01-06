@@ -46,7 +46,7 @@ const Dashboard = () => {
     { name: 'Analysis', icon: BarChart3, href: '#' },
     { name: 'Upload Data', icon: Upload, href: '#' },
     { name: 'Reports', icon: FileCode, href: '#' },
-    { name: 'Settings', icon: Settings, href: '#' },
+    { name: 'Settings', icon: Settings, href: '/profile' },
     ...(isAdmin ? [{ name: 'Admin Panel', icon: Shield, href: '/admin' }] : []),
   ];
 
