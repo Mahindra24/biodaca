@@ -47,6 +47,7 @@ const Dashboard = () => {
     { name: 'Upload Data', icon: Upload, href: '#' },
     { name: 'Reports', icon: FileCode, href: '#' },
     { name: 'Settings', icon: Settings, href: '#' },
+    ...(isAdmin ? [{ name: 'Admin Panel', icon: Shield, href: '/admin' }] : []),
   ];
 
   const getStatusColor = (status: string) => {
