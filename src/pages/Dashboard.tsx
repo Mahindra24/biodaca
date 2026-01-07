@@ -273,7 +273,8 @@ const Dashboard = () => {
                   projects.map((project) => (
                     <div 
                       key={project.id}
-                      className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+                      onClick={() => navigate(`/project/${project.id}`)}
+                      className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-lg bg-gradient-dna flex items-center justify-center">
