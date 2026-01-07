@@ -4,13 +4,25 @@ import { Button } from '@/components/ui/button';
 import { 
   Dna, LayoutDashboard, FileCode, BarChart3, 
   Settings, LogOut, Upload, Clock, CheckCircle,
-  FolderOpen, Bell, User, Menu, X, Shield, Loader2
+  FolderOpen, Bell, User, Menu, X, Shield, Loader2, Plus
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+
+interface Project {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  created_at: string;
+}
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -20,24 +32,63 @@ const Dashboard = () => {
     }
   }, [user, loading, navigate]);
 
+  useEffect(() => {
+    if (user) {
+      fetchProjects();
+    }
+  }, [user]);
+
+  const fetchProjects = async () => {
+    setLoadingProjects(true);
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      toast.error('Failed to load projects');
+    } else {
+      setProjects(data || []);
+    }
+    setLoadingProjects(false);
+  };
+
   const handleSignOut = async () => {
     await signOut();
     toast.success('Signed out successfully');
     navigate('/auth');
   };
 
-  const stats = [
-    { label: 'Total Projects', value: '12', icon: FolderOpen, change: '+2 this month' },
-    { label: 'Active Analysis', value: '3', icon: Clock, change: 'In progress' },
-    { label: 'Completed', value: '9', icon: CheckCircle, change: 'All verified' },
-    { label: 'Storage Used', value: '2.4 GB', icon: BarChart3, change: 'of 10 GB' },
-  ];
+  const handleCreateProject = async () => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from('projects')
+      .insert({
+        user_id: user.id,
+        name: `New Project ${projects.length + 1}`,
+        type: 'Genomic',
+        status: 'pending'
+      });
 
-  const recentProjects = [
-    { name: 'RNA-Seq Analysis - Sample A', status: 'completed', date: 'Dec 28, 2025', type: 'RNA-Seq' },
-    { name: 'Genomic Variant Calling', status: 'in-progress', date: 'Jan 02, 2026', type: 'Genomic' },
-    { name: 'Sanger Sequence Alignment', status: 'completed', date: 'Dec 20, 2025', type: 'Sanger' },
-    { name: 'Metagenomics Study', status: 'pending', date: 'Jan 02, 2026', type: 'Metagenomics' },
+    if (error) {
+      toast.error('Failed to create project');
+    } else {
+      toast.success('Project created!');
+      fetchProjects();
+    }
+  };
+
+  const totalProjects = projects.length;
+  const activeProjects = projects.filter(p => p.status === 'in-progress').length;
+  const completedProjects = projects.filter(p => p.status === 'completed').length;
+
+  const stats = [
+    { label: 'Total Projects', value: String(totalProjects), icon: FolderOpen, change: 'All time' },
+    { label: 'Active Analysis', value: String(activeProjects), icon: Clock, change: 'In progress' },
+    { label: 'Completed', value: String(completedProjects), icon: CheckCircle, change: 'All verified' },
+    { label: 'Storage Used', value: '2.4 GB', icon: BarChart3, change: 'of 10 GB' },
   ];
 
   const sidebarLinks = [
@@ -202,29 +253,45 @@ const Dashboard = () => {
             <div className="lg:col-span-2 glass-card p-6 rounded-2xl">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-heading font-semibold">Recent Projects</h3>
-                <Button variant="ghost" size="sm">View All</Button>
+                <Button variant="ghost" size="sm" onClick={handleCreateProject}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  New Project
+                </Button>
               </div>
 
               <div className="space-y-4">
-                {recentProjects.map((project, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-dna flex items-center justify-center">
-                        <Dna className="h-5 w-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{project.name}</p>
-                        <p className="text-sm text-muted-foreground">{project.type} • {project.date}</p>
-                      </div>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(project.status)}`}>
-                      {project.status.replace('-', ' ')}
-                    </span>
+                {loadingProjects ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   </div>
-                ))}
+                ) : projects.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No projects yet. Create your first project!</p>
+                  </div>
+                ) : (
+                  projects.map((project) => (
+                    <div 
+                      key={project.id}
+                      className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-dna flex items-center justify-center">
+                          <Dna className="h-5 w-5 text-primary-foreground" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{project.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {project.type} • {format(new Date(project.created_at), 'MMM dd, yyyy')}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(project.status)}`}>
+                        {project.status.replace('-', ' ')}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
