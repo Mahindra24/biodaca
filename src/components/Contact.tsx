@@ -21,17 +21,31 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .insert({
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          subject: formData.subject.trim(),
-          message: formData.message.trim(),
-        });
+    const trimmedData = {
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      subject: formData.subject.trim(),
+      message: formData.message.trim(),
+    };
 
-      if (error) throw error;
+    try {
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('contact_messages')
+        .insert(trimmedData);
+
+      if (dbError) {
+        console.error('Error saving to database:', dbError);
+      }
+
+      // Send email notification
+      const { error: emailError } = await supabase.functions.invoke('send-contact-email', {
+        body: trimmedData,
+      });
+
+      if (emailError) {
+        console.error('Error sending email:', emailError);
+      }
 
       toast.success('Thank you for your message! We will get back to you soon.');
       setFormData({ name: '', email: '', subject: '', message: '' });
