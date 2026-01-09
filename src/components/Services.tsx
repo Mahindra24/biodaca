@@ -23,16 +23,34 @@ const services = [
     features: ['Base calling', 'Sequence alignment', 'Mutation detection'],
   },
   {
+    icon: Database,
+    title: 'NGS Data Analysis',
+    description: 'Next-generation sequencing data processing and analysis for high-throughput experiments.',
+    features: ['Quality control', 'Read mapping', 'Variant annotation'],
+  },
+  {
+    icon: Microscope,
+    title: 'Network Biology',
+    description: 'Systems-level analysis of biological networks to understand complex interactions.',
+    features: ['Protein-protein interactions', 'Gene regulatory networks', 'Pathway modeling'],
+  },
+  {
+    icon: Cpu,
+    title: 'Molecular Docking & Simulation',
+    description: 'Computational modeling of molecular interactions for drug discovery and research.',
+    features: ['Protein-ligand docking', 'Molecular dynamics', 'Binding affinity prediction'],
+  },
+  {
+    icon: Dna,
+    title: 'Phylogenetics',
+    description: 'Evolutionary relationship analysis and phylogenetic tree construction.',
+    features: ['Tree construction', 'Evolutionary analysis', 'Species classification'],
+  },
+  {
     icon: Microscope,
     title: 'Metagenomics',
     description: 'Microbial community analysis and taxonomic profiling from environmental samples.',
     features: ['16S/18S analysis', 'Taxonomic classification', 'Diversity metrics'],
-  },
-  {
-    icon: Database,
-    title: 'Data Management',
-    description: 'Secure storage and management of your genomic data with easy access and sharing.',
-    features: ['Cloud storage', 'Data encryption', 'Version control'],
   },
   {
     icon: Cpu,
