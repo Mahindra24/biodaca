@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { 
   Dna, LayoutDashboard, FileCode, BarChart3, 
   Settings, LogOut, Upload, Clock, CheckCircle,
-  FolderOpen, Bell, User, Menu, X, Shield, Loader2, Plus
+  FolderOpen, Bell, User, Menu, X, Shield, Loader2, Plus,
+  File, Download, Trash2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -19,10 +20,23 @@ interface Project {
   created_at: string;
 }
 
+interface ProjectFile {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string | null;
+  created_at: string;
+  project_id: string;
+}
+
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [files, setFiles] = useState<ProjectFile[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
+  const [loadingFiles, setLoadingFiles] = useState(true);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -35,6 +49,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       fetchProjects();
+      fetchFiles();
     }
   }, [user]);
 
@@ -52,6 +67,80 @@ const Dashboard = () => {
       setProjects(data || []);
     }
     setLoadingProjects(false);
+  };
+
+  const fetchFiles = async () => {
+    setLoadingFiles(true);
+    const { data, error } = await supabase
+      .from('project_files')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      toast.error('Failed to load files');
+    } else {
+      setFiles(data || []);
+    }
+    setLoadingFiles(false);
+  };
+
+  const handleDownloadFile = async (file: ProjectFile) => {
+    const { data, error } = await supabase.storage
+      .from('project-files')
+      .download(file.file_path);
+
+    if (error) {
+      toast.error('Failed to download file');
+      return;
+    }
+
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.file_name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDeleteFile = async (file: ProjectFile) => {
+    setDeletingFileId(file.id);
+
+    const { error: storageError } = await supabase.storage
+      .from('project-files')
+      .remove([file.file_path]);
+
+    if (storageError) {
+      toast.error('Failed to delete file from storage');
+      setDeletingFileId(null);
+      return;
+    }
+
+    const { error: dbError } = await supabase
+      .from('project_files')
+      .delete()
+      .eq('id', file.id);
+
+    if (dbError) {
+      toast.error('Failed to delete file record');
+    } else {
+      toast.success('File deleted');
+      fetchFiles();
+    }
+    setDeletingFileId(null);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getProjectName = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    return project?.name || 'Unknown Project';
   };
 
   const handleSignOut = async () => {
@@ -333,6 +422,95 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* My Files Section */}
+          <div className="mt-8 glass-card p-6 rounded-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-heading font-semibold">My Files</h3>
+              <span className="text-sm text-muted-foreground">{files.length} files</span>
+            </div>
+
+            {loadingFiles ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : files.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <File className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No files uploaded yet.</p>
+                <p className="text-sm mt-1">Upload files from within a project.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">File Name</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Project</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Size</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Uploaded</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {files.map((file) => (
+                      <tr key={file.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <File className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="font-medium text-sm truncate max-w-[200px]">{file.file_name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 hidden sm:table-cell">
+                          <span 
+                            className="text-sm text-muted-foreground hover:text-primary cursor-pointer"
+                            onClick={() => navigate(`/project/${file.project_id}`)}
+                          >
+                            {getProjectName(file.project_id)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 hidden md:table-cell">
+                          <span className="text-sm text-muted-foreground">{formatFileSize(file.file_size)}</span>
+                        </td>
+                        <td className="py-3 px-4 hidden lg:table-cell">
+                          <span className="text-sm text-muted-foreground">
+                            {format(new Date(file.created_at), 'MMM dd, yyyy')}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDownloadFile(file)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteFile(file)}
+                              disabled={deletingFileId === file.id}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              {deletingFileId === file.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </main>
