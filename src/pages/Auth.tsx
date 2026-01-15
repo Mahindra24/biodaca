@@ -34,8 +34,26 @@ const Auth = () => {
     const modeParam = searchParams.get('mode');
     const type = searchParams.get('type');
     
+    // Handle password recovery flow
     if (type === 'recovery') {
       setMode('reset');
+      // Exchange the recovery token for a session
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      
+      if (accessToken && refreshToken) {
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }).then(({ error }) => {
+          if (error) {
+            console.error('Error setting session:', error);
+            toast.error('Invalid or expired reset link. Please request a new one.');
+            setMode('forgot');
+          }
+        });
+      }
     } else if (modeParam === 'signup') {
       setMode('signup');
     } else if (modeParam === 'admin') {
