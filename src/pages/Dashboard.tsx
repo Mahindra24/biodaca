@@ -5,8 +5,16 @@ import {
   Dna, LayoutDashboard, FileCode, BarChart3, 
   Settings, LogOut, Upload, Clock, CheckCircle,
   FolderOpen, Bell, User, Menu, X, Shield, Loader2, Plus,
-  File, Download, Trash2
+  File, Download, Trash2, Search, Filter
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,6 +45,9 @@ const Dashboard = () => {
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [loadingFiles, setLoadingFiles] = useState(true);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  const [fileSearch, setFileSearch] = useState('');
+  const [fileProjectFilter, setFileProjectFilter] = useState<string>('all');
+  const [fileSortBy, setFileSortBy] = useState<'date' | 'name' | 'size'>('date');
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -142,6 +153,25 @@ const Dashboard = () => {
     const project = projects.find(p => p.id === projectId);
     return project?.name || 'Unknown Project';
   };
+
+  // Filter and sort files
+  const filteredFiles = files
+    .filter(file => {
+      const matchesSearch = file.file_name.toLowerCase().includes(fileSearch.toLowerCase());
+      const matchesProject = fileProjectFilter === 'all' || file.project_id === fileProjectFilter;
+      return matchesSearch && matchesProject;
+    })
+    .sort((a, b) => {
+      switch (fileSortBy) {
+        case 'name':
+          return a.file_name.localeCompare(b.file_name);
+        case 'size':
+          return b.file_size - a.file_size;
+        case 'date':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
 
   const handleSignOut = async () => {
     await signOut();
@@ -426,9 +456,52 @@ const Dashboard = () => {
 
           {/* My Files Section */}
           <div className="mt-8 glass-card p-6 rounded-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-heading font-semibold">My Files</h3>
-              <span className="text-sm text-muted-foreground">{files.length} files</span>
+            <div className="flex flex-col gap-4 mb-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-heading font-semibold">My Files</h3>
+                <span className="text-sm text-muted-foreground">
+                  {filteredFiles.length} of {files.length} files
+                </span>
+              </div>
+              
+              {/* Search and Filters */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search files..."
+                    value={fileSearch}
+                    onChange={(e) => setFileSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Select value={fileProjectFilter} onValueChange={setFileProjectFilter}>
+                    <SelectTrigger className="w-[160px]">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="All Projects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Projects</SelectItem>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={fileSortBy} onValueChange={(v) => setFileSortBy(v as 'date' | 'name' | 'size')}>
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">Newest First</SelectItem>
+                      <SelectItem value="name">Name A-Z</SelectItem>
+                      <SelectItem value="size">Largest First</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
             {loadingFiles ? (
@@ -440,6 +513,12 @@ const Dashboard = () => {
                 <File className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No files uploaded yet.</p>
                 <p className="text-sm mt-1">Upload files from within a project.</p>
+              </div>
+            ) : filteredFiles.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No files match your search.</p>
+                <p className="text-sm mt-1">Try adjusting your search or filters.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -454,7 +533,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {files.map((file) => (
+                    {filteredFiles.map((file) => (
                       <tr key={file.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
