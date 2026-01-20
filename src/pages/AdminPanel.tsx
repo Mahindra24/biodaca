@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Shield, ShieldOff, Users, Loader2, ChevronDown, ChevronUp, FileText, FolderOpen, Download, Trash2 } from "lucide-react";
+import { ArrowLeft, Shield, ShieldOff, Users, Loader2, ChevronDown, ChevronUp, FileText, FolderOpen, Download, Trash2, FileDown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -273,6 +273,87 @@ const AdminPanel = () => {
     }
   };
 
+  const exportToCSV = () => {
+    // Generate CSV content for profiles
+    const profilesCSV = [
+      ["User ID", "Full Name", "Email", "Role", "Created At", "Projects Count", "Files Count"].join(","),
+      ...users.map((u) =>
+        [
+          u.user_id,
+          `"${(u.full_name || "").replace(/"/g, '""')}"`,
+          `"${(u.email || "").replace(/"/g, '""')}"`,
+          u.isAdmin ? "Admin" : "User",
+          new Date(u.created_at).toISOString(),
+          u.projects.length,
+          u.files.length,
+        ].join(",")
+      ),
+    ].join("\n");
+
+    // Generate CSV content for projects
+    const projectsCSV = [
+      ["Project ID", "User ID", "User Email", "Project Name", "Type", "Status", "Created At"].join(","),
+      ...users.flatMap((u) =>
+        u.projects.map((p) =>
+          [
+            p.id,
+            u.user_id,
+            `"${(u.email || "").replace(/"/g, '""')}"`,
+            `"${p.name.replace(/"/g, '""')}"`,
+            p.type,
+            p.status,
+            new Date(p.created_at).toISOString(),
+          ].join(",")
+        )
+      ),
+    ].join("\n");
+
+    // Generate CSV content for files
+    const filesCSV = [
+      ["File ID", "User ID", "User Email", "Project Name", "File Name", "File Path", "Size (bytes)", "MIME Type", "Created At"].join(","),
+      ...users.flatMap((u) =>
+        u.files.map((f) =>
+          [
+            f.id,
+            u.user_id,
+            `"${(u.email || "").replace(/"/g, '""')}"`,
+            `"${f.project_name.replace(/"/g, '""')}"`,
+            `"${f.file_name.replace(/"/g, '""')}"`,
+            `"${f.file_path.replace(/"/g, '""')}"`,
+            f.file_size,
+            f.mime_type || "unknown",
+            new Date(f.created_at).toISOString(),
+          ].join(",")
+        )
+      ),
+    ].join("\n");
+
+    // Combine all CSVs with section headers
+    const fullCSV = [
+      "=== USER PROFILES ===",
+      profilesCSV,
+      "",
+      "=== PROJECTS ===",
+      projectsCSV,
+      "",
+      "=== FILES ===",
+      filesCSV,
+    ].join("\n");
+
+    // Download the CSV
+    const blob = new Blob([fullCSV], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `user-data-export-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success("Data exported successfully!");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -309,11 +390,21 @@ const AdminPanel = () => {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>User Management</CardTitle>
-            <CardDescription>
-              View all users, their projects, files, and manage admin privileges
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>User Management</CardTitle>
+              <CardDescription>
+                View all users, their projects, files, and manage admin privileges
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              onClick={exportToCSV}
+              disabled={loadingUsers || users.length === 0}
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
           </CardHeader>
           <CardContent>
             {loadingUsers ? (
