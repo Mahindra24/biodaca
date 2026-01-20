@@ -5,7 +5,7 @@ import {
   Dna, LayoutDashboard, FileCode, BarChart3, 
   Settings, LogOut, Upload, Clock, CheckCircle,
   FolderOpen, Bell, User, Menu, X, Shield, Loader2, Plus,
-  File, Download, Trash2, Search, Filter
+  File, Download, Trash2, Search, Filter, Users, Mail, Phone, Info, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,6 +19,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Project {
   id: string;
@@ -38,10 +41,28 @@ interface ProjectFile {
   project_id: string;
 }
 
+interface UserWithDetails {
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  created_at: string;
+  projects: {
+    id: string;
+    name: string;
+    type: string;
+    status: string;
+    created_at: string;
+  }[];
+}
+
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [files, setFiles] = useState<ProjectFile[]>([]);
+  const [allUsers, setAllUsers] = useState<UserWithDetails[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [loadingFiles, setLoadingFiles] = useState(true);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
@@ -61,8 +82,11 @@ const Dashboard = () => {
     if (user) {
       fetchProjects();
       fetchFiles();
+      if (isAdmin) {
+        fetchAllUsers();
+      }
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   const fetchProjects = async () => {
     setLoadingProjects(true);
@@ -94,6 +118,49 @@ const Dashboard = () => {
       setFiles(data || []);
     }
     setLoadingFiles(false);
+  };
+
+  const fetchAllUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      // Fetch all profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (profilesError) throw profilesError;
+
+      // Fetch all projects
+      const { data: allProjects, error: projectsError } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (projectsError) throw projectsError;
+
+      // Map users with their projects
+      const usersWithDetails: UserWithDetails[] = (profiles || []).map(profile => ({
+        user_id: profile.user_id,
+        full_name: profile.full_name,
+        email: profile.email,
+        phone: profile.phone,
+        created_at: profile.created_at,
+        projects: (allProjects || []).filter(p => p.user_id === profile.user_id).map(p => ({
+          id: p.id,
+          name: p.name,
+          type: p.type,
+          status: p.status,
+          created_at: p.created_at,
+        })),
+      }));
+
+      setAllUsers(usersWithDetails);
+    } catch (error) {
+      toast.error('Failed to load users');
+    } finally {
+      setLoadingUsers(false);
+    }
   };
 
   const handleDownloadFile = async (file: ProjectFile) => {
@@ -365,6 +432,133 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
+
+          {/* Admin User Details Section */}
+          {isAdmin && (
+            <Card className="mb-8">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  <CardTitle>User Details</CardTitle>
+                </div>
+                <CardDescription>
+                  View all registered users, their contact information, and project details
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingUsers ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : allUsers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No users found.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {allUsers.map((u) => (
+                      <Collapsible
+                        key={u.user_id}
+                        open={expandedUser === u.user_id}
+                        onOpenChange={(open) => setExpandedUser(open ? u.user_id : null)}
+                      >
+                        <div className="border border-border rounded-xl overflow-hidden">
+                          <CollapsibleTrigger asChild>
+                            <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-gradient-dna flex items-center justify-center">
+                                  <User className="h-5 w-5 text-primary-foreground" />
+                                </div>
+                                <div className="text-left">
+                                  <p className="font-medium">{u.full_name || 'Unnamed User'}</p>
+                                  <p className="text-sm text-muted-foreground">{u.email || 'No email'}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Badge variant="secondary">{u.projects.length} Projects</Badge>
+                                {expandedUser === u.user_id ? (
+                                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </div>
+                            </button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="border-t border-border p-4 bg-muted/20 space-y-4">
+                              {/* Contact Information */}
+                              <div className="grid sm:grid-cols-3 gap-4">
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Full Name</p>
+                                    <p className="text-sm font-medium">{u.full_name || 'Not provided'}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Mail className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Email</p>
+                                    <p className="text-sm font-medium">{u.email || 'Not provided'}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Phone className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Phone</p>
+                                    <p className="text-sm font-medium">{u.phone || 'Not provided'}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Projects Section */}
+                              <div>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Info className="h-4 w-4 text-muted-foreground" />
+                                  <p className="text-sm font-medium">Projects ({u.projects.length})</p>
+                                </div>
+                                {u.projects.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">No projects created yet.</p>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {u.projects.map((project) => (
+                                      <div
+                                        key={project.id}
+                                        className="flex items-center justify-between p-3 bg-background rounded-lg border border-border"
+                                      >
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                            <Dna className="h-4 w-4 text-primary" />
+                                          </div>
+                                          <div>
+                                            <p className="text-sm font-medium">{project.name}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {project.type} • {format(new Date(project.created_at), 'MMM dd, yyyy')}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <Badge
+                                          variant="outline"
+                                          className={getStatusColor(project.status)}
+                                        >
+                                          {project.status.replace('-', ' ')}
+                                        </Badge>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </CollapsibleContent>
+                        </div>
+                      </Collapsible>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Content Grid */}
           <div className="grid lg:grid-cols-3 gap-8">
