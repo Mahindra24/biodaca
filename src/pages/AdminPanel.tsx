@@ -7,7 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Shield, ShieldOff, Users, Loader2, ChevronDown, ChevronUp, FileText, FolderOpen, Download } from "lucide-react";
+import { ArrowLeft, Shield, ShieldOff, Users, Loader2, ChevronDown, ChevronUp, FileText, FolderOpen, Download, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface UserFile {
@@ -47,6 +58,7 @@ const AdminPanel = () => {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -223,6 +235,41 @@ const AdminPanel = () => {
       URL.revokeObjectURL(url);
     } catch (error: any) {
       toast.error("Failed to download file: " + error.message);
+    }
+  };
+
+  const deleteFile = async (fileId: string, filePath: string, userId: string) => {
+    setDeletingFileId(fileId);
+    try {
+      // Delete from storage bucket
+      const { error: storageError } = await supabase.storage
+        .from("project-files")
+        .remove([filePath]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from("project_files")
+        .delete()
+        .eq("id", fileId);
+
+      if (dbError) throw dbError;
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.user_id === userId
+            ? { ...u, files: u.files.filter((f) => f.id !== fileId) }
+            : u
+        )
+      );
+
+      toast.success("File deleted successfully.");
+    } catch (error: any) {
+      toast.error("Failed to delete file: " + error.message);
+    } finally {
+      setDeletingFileId(null);
     }
   };
 
@@ -446,13 +493,48 @@ const AdminPanel = () => {
                                           {new Date(file.created_at).toLocaleDateString()}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => downloadFile(file.file_path, file.file_name)}
-                                          >
-                                            <Download className="h-4 w-4" />
-                                          </Button>
+                                          <div className="flex justify-end gap-1">
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => downloadFile(file.file_path, file.file_name)}
+                                            >
+                                              <Download className="h-4 w-4" />
+                                            </Button>
+                                            <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                  disabled={deletingFileId === file.id}
+                                                >
+                                                  {deletingFileId === file.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                  ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                  )}
+                                                </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                  <AlertDialogTitle>Delete File</AlertDialogTitle>
+                                                  <AlertDialogDescription>
+                                                    Are you sure you want to delete "{file.file_name}"? This action cannot be undone.
+                                                  </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                  <AlertDialogAction
+                                                    onClick={() => deleteFile(file.id, file.file_path, u.user_id)}
+                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                  >
+                                                    Delete
+                                                  </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                            </AlertDialog>
+                                          </div>
                                         </TableCell>
                                       </TableRow>
                                     ))}
