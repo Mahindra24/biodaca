@@ -5,10 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { ArrowLeft, Camera, Loader2, User, Save, Phone } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, User, Save, Phone, Building2, MapPin } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -29,6 +30,9 @@ const ProfileSettings = () => {
   const [uploading, setUploading] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,6 +60,9 @@ const ProfileSettings = () => {
       setProfile(data);
       setFullName(data.full_name || "");
       setPhone(data.phone || "");
+      setAddress(data.address || "");
+      setCompanyName(data.company_name || "");
+      setBio(data.bio || "");
       setAvatarUrl(data.avatar_url);
     } catch (error: any) {
       toast.error("Failed to load profile: " + error.message);
@@ -120,6 +127,9 @@ const ProfileSettings = () => {
         .update({
           full_name: fullName,
           phone: phone,
+          address: address,
+          company_name: companyName,
+          bio: bio,
           avatar_url: avatarUrl,
         })
         .eq("user_id", user.id);
@@ -237,6 +247,47 @@ const ProfileSettings = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Enter your phone number"
+              />
+            </div>
+
+            {/* Company Name Field */}
+            <div className="space-y-2">
+              <Label htmlFor="companyName" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Company / Organization
+              </Label>
+              <Input
+                id="companyName"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Enter your company or organization name"
+              />
+            </div>
+
+            {/* Address Field */}
+            <div className="space-y-2">
+              <Label htmlFor="address" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Address
+              </Label>
+              <Textarea
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Enter your address"
+                rows={2}
+              />
+            </div>
+
+            {/* Bio Field */}
+            <div className="space-y-2">
+              <Label htmlFor="bio">About / Bio</Label>
+              <Textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell us about yourself or your project..."
+                rows={4}
               />
             </div>
 
