@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { ArrowLeft, Camera, Loader2, User, Save } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, User, Save, Phone } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -28,6 +28,7 @@ const ProfileSettings = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ const ProfileSettings = () => {
 
       setProfile(data);
       setFullName(data.full_name || "");
+      setPhone(data.phone || "");
       setAvatarUrl(data.avatar_url);
     } catch (error: any) {
       toast.error("Failed to load profile: " + error.message);
@@ -117,6 +119,7 @@ const ProfileSettings = () => {
         .from("profiles")
         .update({
           full_name: fullName,
+          phone: phone,
           avatar_url: avatarUrl,
         })
         .eq("user_id", user.id);
@@ -219,6 +222,21 @@ const ProfileSettings = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your full name"
+              />
+            </div>
+
+            {/* Phone Field */}
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                Phone Number
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Enter your phone number"
               />
             </div>
 
