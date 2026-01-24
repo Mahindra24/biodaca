@@ -5,7 +5,8 @@ import {
   Dna, LayoutDashboard, FileCode, BarChart3, 
   Settings, LogOut, Upload, Clock, CheckCircle,
   FolderOpen, Bell, User, Menu, X, Shield, Loader2, Plus,
-  File, Download, Trash2, Search, Filter, Users, Mail, Phone, Info, ChevronDown, ChevronUp
+  File, Download, Trash2, Search, Filter, Users, Mail, Phone, Info, ChevronDown, ChevronUp,
+  Building2, MapPin, FileText
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -46,6 +47,9 @@ interface UserWithDetails {
   full_name: string | null;
   email: string | null;
   phone: string | null;
+  address: string | null;
+  company_name: string | null;
+  bio: string | null;
   created_at: string;
   projects: {
     id: string;
@@ -145,6 +149,9 @@ const Dashboard = () => {
         full_name: profile.full_name,
         email: profile.email,
         phone: profile.phone,
+        address: profile.address,
+        company_name: profile.company_name,
+        bio: profile.bio,
         created_at: profile.created_at,
         projects: (allProjects || []).filter(p => p.user_id === profile.user_id).map(p => ({
           id: p.id,
@@ -511,6 +518,35 @@ const Dashboard = () => {
                                   </div>
                                 </div>
                               </div>
+
+                              {/* Additional Profile Information */}
+                              <div className="grid sm:grid-cols-2 gap-4">
+                                <div className="flex items-start gap-2">
+                                  <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Company / Organization</p>
+                                    <p className="text-sm font-medium">{u.company_name || 'Not provided'}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Address</p>
+                                    <p className="text-sm font-medium">{u.address || 'Not provided'}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Bio */}
+                              {u.bio && (
+                                <div className="flex items-start gap-2">
+                                  <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">About / Bio</p>
+                                    <p className="text-sm font-medium whitespace-pre-wrap">{u.bio}</p>
+                                  </div>
+                                </div>
+                              )}
 
                               {/* Projects Section */}
                               <div>
