@@ -67,6 +67,7 @@ const Dashboard = () => {
   const [allUsers, setAllUsers] = useState<UserWithDetails[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState('');
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [loadingFiles, setLoadingFiles] = useState(true);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
@@ -441,30 +442,52 @@ const Dashboard = () => {
           </div>
 
           {/* Admin User Details Section */}
-          {isAdmin && (
-            <Card className="mb-8">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  <CardTitle>User Details</CardTitle>
-                </div>
-                <CardDescription>
-                  View all registered users, their contact information, and project details
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loadingUsers ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          {isAdmin && (() => {
+            const filteredUsers = allUsers.filter(u => {
+              const searchLower = userSearch.toLowerCase();
+              return (
+                (u.full_name?.toLowerCase().includes(searchLower)) ||
+                (u.email?.toLowerCase().includes(searchLower)) ||
+                (u.company_name?.toLowerCase().includes(searchLower))
+              );
+            });
+
+            return (
+              <Card className="mb-8">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      <CardTitle>User Details</CardTitle>
+                    </div>
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by name, email, company..."
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
                   </div>
-                ) : allUsers.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>No users found.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {allUsers.map((u) => (
+                  <CardDescription>
+                    View all registered users, their contact information, and project details
+                    {userSearch && ` • Showing ${filteredUsers.length} of ${allUsers.length} users`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loadingUsers ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : filteredUsers.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>{userSearch ? 'No users match your search.' : 'No users found.'}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                    {filteredUsers.map((u) => (
                       <Collapsible
                         key={u.user_id}
                         open={expandedUser === u.user_id}
@@ -591,10 +614,11 @@ const Dashboard = () => {
                       </Collapsible>
                     ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Content Grid */}
           <div className="grid lg:grid-cols-3 gap-8">
