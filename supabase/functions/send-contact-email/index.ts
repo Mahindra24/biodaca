@@ -11,6 +11,7 @@ const corsHeaders = {
 interface ContactEmailRequest {
   name: string;
   email: string;
+  phone?: string;
   subject: string;
   message: string;
 }
@@ -34,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { name, email, subject, message }: ContactEmailRequest = await req.json();
+    const { name, email, phone, subject, message }: ContactEmailRequest = await req.json();
     console.log("Received contact form submission from:", email);
 
     // Validate inputs
@@ -49,6 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Sanitize all user inputs for HTML email
     const safeName = escapeHtml(name);
     const safeEmail = escapeHtml(email);
+    const safePhone = phone ? escapeHtml(phone) : '';
     const safeSubject = escapeHtml(subject);
     const safeMessage = escapeHtml(message);
 
@@ -63,6 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p><strong>Name:</strong> ${safeName}</p>
             <p><strong>Email:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a></p>
+            ${safePhone ? `<p><strong>Phone:</strong> <a href="tel:${safePhone}">${safePhone}</a></p>` : ''}
             <p><strong>Subject:</strong> ${safeSubject}</p>
           </div>
           <h3>Message:</h3>
