@@ -117,8 +117,24 @@ const ProfileSettings = () => {
     }
   };
 
+  const validateFields = (): string | null => {
+    if (fullName.length > 100) return "Full name must be less than 100 characters.";
+    if (phone && !/^\+?[\d\s\-().]{0,20}$/.test(phone)) return "Please enter a valid phone number.";
+    if (phone.length > 20) return "Phone number must be less than 20 characters.";
+    if (companyName.length > 150) return "Company name must be less than 150 characters.";
+    if (address.length > 300) return "Address must be less than 300 characters.";
+    if (bio.length > 1000) return "Bio must be less than 1000 characters.";
+    return null;
+  };
+
   const handleSave = async () => {
     if (!user) return;
+
+    const validationError = validateFields();
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -232,7 +248,9 @@ const ProfileSettings = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your full name"
+                maxLength={100}
               />
+              <p className="text-xs text-muted-foreground text-right">{fullName.length}/100</p>
             </div>
 
             {/* Phone Field */}
@@ -246,8 +264,10 @@ const ProfileSettings = () => {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter your phone number"
+                placeholder="+1 (555) 123-4567"
+                maxLength={20}
               />
+              <p className="text-xs text-muted-foreground text-right">{phone.length}/20</p>
             </div>
 
             {/* Company Name Field */}
@@ -261,7 +281,9 @@ const ProfileSettings = () => {
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Enter your company or organization name"
+                maxLength={150}
               />
+              <p className="text-xs text-muted-foreground text-right">{companyName.length}/150</p>
             </div>
 
             {/* Address Field */}
@@ -276,7 +298,9 @@ const ProfileSettings = () => {
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Enter your address"
                 rows={2}
+                maxLength={300}
               />
+              <p className="text-xs text-muted-foreground text-right">{address.length}/300</p>
             </div>
 
             {/* Bio Field */}
@@ -288,7 +312,9 @@ const ProfileSettings = () => {
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Tell us about yourself or your project..."
                 rows={4}
+                maxLength={1000}
               />
+              <p className="text-xs text-muted-foreground text-right">{bio.length}/1000</p>
             </div>
 
             {/* Email Field (Read-only) */}
