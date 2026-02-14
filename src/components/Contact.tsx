@@ -13,6 +13,7 @@ const Contact = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     subject: '',
     message: '',
   });
@@ -24,6 +25,7 @@ const Contact = () => {
     const trimmedData = {
       name: formData.name.trim(),
       email: formData.email.trim(),
+      phone: formData.phone.trim(),
       subject: formData.subject.trim(),
       message: formData.message.trim(),
     };
@@ -48,7 +50,7 @@ const Contact = () => {
       }
 
       toast.success('Thank you for your message! We will get back to you soon.');
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
     } catch (error) {
       console.error('Error submitting contact form:', error);
       toast.error('Failed to send message. Please try again.');
@@ -169,22 +171,35 @@ const Contact = () => {
                     required
                     className="bg-background"
                   />
+              </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Phone Number
+                  </label>
+                  <Input
+                    type="tel"
+                    placeholder="+91 9876543210"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="bg-background"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Subject
+                  </label>
+                  <Input
+                    placeholder="How can we help?"
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    required
+                    className="bg-background"
+                  />
                 </div>
               </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">
-                  Subject
-                </label>
-                <Input
-                  placeholder="How can we help?"
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  required
-                  className="bg-background"
-                />
-              </div>
-
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">
                   Message
