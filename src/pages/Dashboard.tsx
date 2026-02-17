@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
@@ -6,8 +6,15 @@ import {
   Settings, LogOut, Upload, Clock, CheckCircle,
   FolderOpen, Bell, User, Menu, X, Shield, Loader2, Plus,
   File, Download, Trash2, Search, Filter, Users, Mail, Phone, Info, ChevronDown, ChevronUp,
-  Building2, MapPin, FileText
+  Building2, MapPin, FileText, PieChart, TrendingUp
 } from 'lucide-react';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, PieChart as RechartsPie, Pie, Cell, CartesianGrid } from 'recharts';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -63,6 +70,11 @@ interface UserWithDetails {
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const projectsRef = useRef<HTMLDivElement>(null);
+  const analysisRef = useRef<HTMLDivElement>(null);
+  const reportsRef = useRef<HTMLDivElement>(null);
+  const filesRef = useRef<HTMLDivElement>(null);
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [allUsers, setAllUsers] = useState<UserWithDetails[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -285,15 +297,46 @@ const Dashboard = () => {
     { label: 'Storage Used', value: '2.4 GB', icon: BarChart3, change: 'of 10 GB' },
   ];
 
+  const scrollToSection = (section: string) => {
+    setActiveSection(section);
+    setSidebarOpen(false);
+    const refMap: Record<string, React.RefObject<HTMLDivElement | null>> = {
+      projects: projectsRef,
+      analysis: reportsRef,
+      reports: reportsRef,
+      files: filesRef,
+    };
+    const ref = refMap[section];
+    if (ref?.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const sidebarLinks = [
-    { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', active: true },
-    { name: 'My Projects', icon: FolderOpen, href: '#' },
-    { name: 'Analysis', icon: BarChart3, href: '#' },
-    { name: 'Upload Data', icon: Upload, href: '#' },
-    { name: 'Reports', icon: FileCode, href: '#' },
-    { name: 'Settings', icon: Settings, href: '/profile' },
-    ...(isAdmin ? [{ name: 'Admin Panel', icon: Shield, href: '/admin' }] : []),
+    { name: 'Dashboard', icon: LayoutDashboard, section: 'dashboard', href: '/dashboard' },
+    { name: 'My Projects', icon: FolderOpen, section: 'projects' },
+    { name: 'Analysis', icon: BarChart3, section: 'analysis' },
+    { name: 'Reports', icon: FileCode, section: 'reports' },
+    { name: 'Settings', icon: Settings, section: 'settings', href: '/profile' },
+    ...(isAdmin ? [{ name: 'Admin Panel', icon: Shield, section: 'admin', href: '/admin' }] : []),
   ];
+
+  // Chart data
+  const statusData = [
+    { name: 'Pending', value: projects.filter(p => p.status === 'pending').length, fill: 'hsl(var(--muted-foreground))' },
+    { name: 'In Progress', value: projects.filter(p => p.status === 'in-progress').length, fill: 'hsl(45, 93%, 47%)' },
+    { name: 'Completed', value: projects.filter(p => p.status === 'completed').length, fill: 'hsl(var(--primary))' },
+  ].filter(d => d.value > 0);
+
+  const typeData = projects.reduce<Record<string, number>>((acc, p) => {
+    acc[p.type] = (acc[p.type] || 0) + 1;
+    return acc;
+  }, {});
+  const typeChartData = Object.entries(typeData).map(([name, value]) => ({ name, value }));
+
+  const chartConfig: ChartConfig = {
+    value: { label: 'Count' },
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -343,18 +386,24 @@ const Dashboard = () => {
         {/* Navigation */}
         <nav className="p-4 space-y-2">
           {sidebarLinks.map((link) => (
-            <a
+            <button
               key={link.name}
-              href={link.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                link.active 
+              onClick={() => {
+                if (link.href) {
+                  navigate(link.href);
+                } else {
+                  scrollToSection(link.section);
+                }
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                activeSection === link.section
                   ? 'bg-primary text-primary-foreground' 
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
               <link.icon className="h-5 w-5" />
               {link.name}
-            </a>
+            </button>
           ))}
         </nav>
 
@@ -620,8 +669,92 @@ const Dashboard = () => {
             );
           })()}
 
+          {/* Reports & Analysis Section */}
+          <div ref={reportsRef} className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <PieChart className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-heading font-semibold">Reports & Analysis</h3>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-6">
+              {/* Project Status Distribution */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Project Status Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {statusData.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground text-sm">No project data yet</div>
+                  ) : (
+                    <ChartContainer config={chartConfig} className="h-[220px] w-full">
+                      <RechartsPie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                          {statusData.map((entry, index) => (
+                            <Cell key={index} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                      </RechartsPie>
+                    </ChartContainer>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Projects by Type */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-sm font-medium">Projects by Type</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {typeChartData.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground text-sm">No project data yet</div>
+                  ) : (
+                    <ChartContainer config={chartConfig} className="h-[220px] w-full">
+                      <BarChart data={typeChartData}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                        <XAxis dataKey="name" className="text-xs" />
+                        <YAxis allowDecimals={false} className="text-xs" />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ChartContainer>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Summary Stats */}
+              <Card className="sm:col-span-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Project Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-muted/50 rounded-xl">
+                      <p className="text-2xl font-bold text-primary">{totalProjects}</p>
+                      <p className="text-xs text-muted-foreground">Total Projects</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-xl">
+                      <p className="text-2xl font-bold text-accent-foreground">{activeProjects}</p>
+                      <p className="text-xs text-muted-foreground">In Progress</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-xl">
+                      <p className="text-2xl font-bold text-primary">{completedProjects}</p>
+                      <p className="text-xs text-muted-foreground">Completed</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-xl">
+                      <p className="text-2xl font-bold">{files.length}</p>
+                      <p className="text-xs text-muted-foreground">Total Files</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
           {/* Content Grid */}
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div ref={projectsRef} className="grid lg:grid-cols-3 gap-8">
             {/* Recent Projects */}
             <div className="lg:col-span-2 glass-card p-6 rounded-2xl">
               <div className="flex items-center justify-between mb-6">
@@ -709,7 +842,7 @@ const Dashboard = () => {
           </div>
 
           {/* My Files Section */}
-          <div className="mt-8 glass-card p-6 rounded-2xl">
+          <div ref={filesRef} className="mt-8 glass-card p-6 rounded-2xl">
             <div className="flex flex-col gap-4 mb-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-heading font-semibold">My Files</h3>
