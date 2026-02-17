@@ -312,6 +312,81 @@ const Dashboard = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    const headers = ['Project Name', 'Type', 'Status', 'Created At'];
+    const rows = projects.map(p => [
+      p.name,
+      p.type,
+      p.status,
+      format(new Date(p.created_at), 'yyyy-MM-dd'),
+    ]);
+    const summaryRows = [
+      [],
+      ['Summary'],
+      ['Total Projects', String(totalProjects)],
+      ['Active', String(activeProjects)],
+      ['Completed', String(completedProjects)],
+      ['Total Files', String(files.length)],
+    ];
+    const csvContent = [headers, ...rows, ...summaryRows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `biodaca-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('CSV report downloaded');
+  };
+
+  const handleExportPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow popups to download PDF');
+      return;
+    }
+    const statusRows = statusData.map(d => `<tr><td>${d.name}</td><td>${d.value}</td></tr>`).join('');
+    const typeRows = typeChartData.map(d => `<tr><td>${d.name}</td><td>${d.value}</td></tr>`).join('');
+    const projectRows = projects.map(p =>
+      `<tr><td>${p.name}</td><td>${p.type}</td><td>${p.status}</td><td>${format(new Date(p.created_at), 'MMM dd, yyyy')}</td></tr>`
+    ).join('');
+    printWindow.document.write(`
+      <html><head><title>BioDaCa Report</title>
+      <style>
+        body { font-family: system-ui, sans-serif; padding: 40px; color: #1a1a1a; }
+        h1 { color: #0d9488; margin-bottom: 4px; }
+        h2 { margin-top: 28px; color: #333; border-bottom: 2px solid #0d9488; padding-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; font-size: 14px; }
+        th { background: #f0fdfa; font-weight: 600; }
+        .summary { display: flex; gap: 20px; margin-top: 12px; }
+        .stat { background: #f0fdfa; padding: 16px; border-radius: 8px; text-align: center; flex: 1; }
+        .stat-value { font-size: 28px; font-weight: 700; color: #0d9488; }
+        .stat-label { font-size: 12px; color: #666; margin-top: 4px; }
+        .date { color: #888; font-size: 12px; margin-top: 4px; }
+      </style></head><body>
+      <h1>BioDaCa Reports &amp; Analysis</h1>
+      <p class="date">Generated: ${format(new Date(), 'MMMM dd, yyyy')}</p>
+      <div class="summary">
+        <div class="stat"><div class="stat-value">${totalProjects}</div><div class="stat-label">Total Projects</div></div>
+        <div class="stat"><div class="stat-value">${activeProjects}</div><div class="stat-label">In Progress</div></div>
+        <div class="stat"><div class="stat-value">${completedProjects}</div><div class="stat-label">Completed</div></div>
+        <div class="stat"><div class="stat-value">${files.length}</div><div class="stat-label">Total Files</div></div>
+      </div>
+      <h2>Project Status Distribution</h2>
+      <table><tr><th>Status</th><th>Count</th></tr>${statusRows}</table>
+      <h2>Projects by Type</h2>
+      <table><tr><th>Type</th><th>Count</th></tr>${typeRows}</table>
+      <h2>All Projects</h2>
+      <table><tr><th>Name</th><th>Type</th><th>Status</th><th>Created</th></tr>${projectRows}</table>
+      </body></html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   const sidebarLinks = [
     { name: 'Dashboard', icon: LayoutDashboard, section: 'dashboard', href: '/dashboard' },
     { name: 'My Projects', icon: FolderOpen, section: 'projects' },
@@ -671,9 +746,21 @@ const Dashboard = () => {
 
           {/* Reports & Analysis Section */}
           <div ref={reportsRef} className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <PieChart className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-heading font-semibold">Reports & Analysis</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <PieChart className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-heading font-semibold">Reports & Analysis</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                  <Download className="h-4 w-4 mr-1" />
+                  CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                  <FileText className="h-4 w-4 mr-1" />
+                  PDF
+                </Button>
+              </div>
             </div>
             <div className="grid sm:grid-cols-2 gap-6">
               {/* Project Status Distribution */}
