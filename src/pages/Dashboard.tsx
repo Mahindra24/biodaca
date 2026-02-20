@@ -289,6 +289,7 @@ const Dashboard = () => {
   const totalProjects = projects.length;
   const activeProjects = projects.filter(p => p.status === 'in-progress').length;
   const completedProjects = projects.filter(p => p.status === 'completed').length;
+  const pendingProjects = projects.filter(p => p.status === 'pending').length;
 
   const stats = [
     { label: 'Total Projects', value: String(totalProjects), icon: FolderOpen, change: 'All time' },
@@ -388,12 +389,12 @@ const Dashboard = () => {
   };
 
   const sidebarLinks = [
-    { name: 'Dashboard', icon: LayoutDashboard, section: 'dashboard', href: '/dashboard' },
-    { name: 'My Projects', icon: FolderOpen, section: 'projects' },
-    { name: 'Analysis', icon: BarChart3, section: 'analysis' },
-    { name: 'Reports', icon: FileCode, section: 'reports' },
-    { name: 'Settings', icon: Settings, section: 'settings', href: '/profile' },
-    ...(isAdmin ? [{ name: 'Admin Panel', icon: Shield, section: 'admin', href: '/admin' }] : []),
+    { name: 'Dashboard', icon: LayoutDashboard, section: 'dashboard', href: '/dashboard', badge: null },
+    { name: 'My Projects', icon: FolderOpen, section: 'projects', badge: pendingProjects > 0 ? pendingProjects : null },
+    { name: 'Analysis', icon: BarChart3, section: 'analysis', badge: null },
+    { name: 'Reports', icon: FileCode, section: 'reports', badge: null },
+    { name: 'Settings', icon: Settings, section: 'settings', href: '/profile', badge: null },
+    ...(isAdmin ? [{ name: 'Admin Panel', icon: Shield, section: 'admin', href: '/admin', badge: null }] : []),
   ];
 
   // Chart data
@@ -477,7 +478,16 @@ const Dashboard = () => {
               }`}
             >
               <link.icon className="h-5 w-5" />
-              {link.name}
+              <span className="flex-1 text-left">{link.name}</span>
+              {link.badge !== null && (
+                <span className={`min-w-5 h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center ${
+                  activeSection === link.section
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'bg-amber-500/20 text-amber-600'
+                }`}>
+                  {link.badge}
+                </span>
+              )}
             </button>
           ))}
         </nav>
