@@ -266,6 +266,20 @@ const Dashboard = () => {
     navigate('/auth');
   };
 
+  const handleUpdateProjectStatus = async (projectId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('projects')
+      .update({ status: newStatus })
+      .eq('id', projectId);
+
+    if (error) {
+      toast.error('Failed to update project status');
+    } else {
+      toast.success('Project status updated');
+      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status: newStatus } : p));
+    }
+  };
+
   const handleCreateProject = async () => {
     if (!user) return;
     
@@ -890,9 +904,24 @@ const Dashboard = () => {
                           </p>
                         </div>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(project.status)}`}>
-                        {project.status.replace('-', ' ')}
-                      </span>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={project.status}
+                          onValueChange={(newStatus) => handleUpdateProjectStatus(project.id, newStatus)}
+                        >
+                          <SelectTrigger
+                            className={`w-36 h-7 text-xs font-medium border-0 rounded-full px-3 focus:ring-1 ${getStatusColor(project.status)}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="in-progress">In Progress</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   ))
                 )}
