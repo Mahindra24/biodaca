@@ -266,6 +266,24 @@ const Dashboard = () => {
     navigate('/auth');
   };
 
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+
+  const handleDeleteProject = async (projectId: string) => {
+    setDeletingProjectId(projectId);
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+
+    if (error) {
+      toast.error('Failed to delete project');
+    } else {
+      toast.success('Project deleted');
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+    }
+    setDeletingProjectId(null);
+  };
+
   const handleUpdateProjectStatus = async (projectId: string, newStatus: string) => {
     const { error } = await supabase
       .from('projects')
@@ -904,7 +922,7 @@ const Dashboard = () => {
                           </p>
                         </div>
                       </div>
-                      <div onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <Select
                           value={project.status}
                           onValueChange={(newStatus) => handleUpdateProjectStatus(project.id, newStatus)}
@@ -921,6 +939,24 @@ const Dashboard = () => {
                             <SelectItem value="completed">Completed</SelectItem>
                           </SelectContent>
                         </Select>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Are you sure you want to delete this project?')) {
+                              handleDeleteProject(project.id);
+                            }
+                          }}
+                          disabled={deletingProjectId === project.id}
+                        >
+                          {deletingProjectId === project.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
                     </div>
                   ))
