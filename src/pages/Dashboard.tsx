@@ -6,7 +6,7 @@ import {
   Settings, LogOut, Upload, Clock, CheckCircle,
   FolderOpen, Bell, User, Menu, X, Shield, Loader2, Plus,
   File, Download, Trash2, Search, Filter, Users, Mail, Phone, Info, ChevronDown, ChevronUp,
-  Building2, MapPin, FileText, PieChart, TrendingUp
+  Building2, MapPin, FileText, PieChart, TrendingUp, Pencil, Check as CheckIcon
 } from 'lucide-react';
 import {
   ChartContainer,
@@ -267,6 +267,29 @@ const Dashboard = () => {
   };
 
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const handleRenameProject = async (projectId: string) => {
+    const trimmed = editingProjectName.trim();
+    if (!trimmed) {
+      setEditingProjectId(null);
+      return;
+    }
+    const { error } = await supabase
+      .from('projects')
+      .update({ name: trimmed })
+      .eq('id', projectId);
+
+    if (error) {
+      toast.error('Failed to rename project');
+    } else {
+      toast.success('Project renamed');
+      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, name: trimmed } : p));
+    }
+    setEditingProjectId(null);
+  };
 
   const handleDeleteProject = async (projectId: string) => {
     setDeletingProjectId(projectId);
@@ -916,7 +939,36 @@ const Dashboard = () => {
                           <Dna className="h-5 w-5 text-primary-foreground" />
                         </div>
                         <div>
-                          <p className="font-medium">{project.name}</p>
+                          {editingProjectId === project.id ? (
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <Input
+                                ref={renameInputRef}
+                                value={editingProjectName}
+                                onChange={(e) => setEditingProjectName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleRenameProject(project.id);
+                                  if (e.key === 'Escape') setEditingProjectId(null);
+                                }}
+                                onBlur={() => handleRenameProject(project.id)}
+                                className="h-7 text-sm font-medium w-48"
+                                autoFocus
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 group/name">
+                              <p className="font-medium">{project.name}</p>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingProjectId(project.id);
+                                  setEditingProjectName(project.name);
+                                }}
+                                className="opacity-0 group-hover/name:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          )}
                           <p className="text-sm text-muted-foreground">
                             {project.type} • {format(new Date(project.created_at), 'MMM dd, yyyy')}
                           </p>
