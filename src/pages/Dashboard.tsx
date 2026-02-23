@@ -30,6 +30,8 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 interface Project {
   id: string;
@@ -321,15 +323,24 @@ const Dashboard = () => {
     }
   };
 
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectType, setNewProjectType] = useState('Genomic');
+  const [creatingProject, setCreatingProject] = useState(false);
+
+  const projectTypes = ['Genomic', 'Proteomic', 'Transcriptomic', 'Metabolomic', 'Epigenomic', 'Metagenomic', 'Other'];
+
   const handleCreateProject = async () => {
     if (!user) return;
+    const name = newProjectName.trim() || `New Project ${projects.length + 1}`;
+    setCreatingProject(true);
     
     const { error } = await supabase
       .from('projects')
       .insert({
         user_id: user.id,
-        name: `New Project ${projects.length + 1}`,
-        type: 'Genomic',
+        name,
+        type: newProjectType,
         status: 'pending'
       });
 
@@ -339,6 +350,10 @@ const Dashboard = () => {
       toast.success('Project created!');
       fetchProjects();
     }
+    setCreatingProject(false);
+    setShowCreateDialog(false);
+    setNewProjectName('');
+    setNewProjectType('Genomic');
   };
 
   const totalProjects = projects.length;
@@ -495,6 +510,7 @@ const Dashboard = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-muted/30 flex">
       {/* Sidebar */}
       <aside className={`fixed lg:relative inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ${
@@ -911,7 +927,7 @@ const Dashboard = () => {
             <div className="lg:col-span-2 glass-card p-6 rounded-2xl">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-heading font-semibold">Recent Projects</h3>
-                <Button variant="ghost" size="sm" onClick={handleCreateProject}>
+                <Button variant="ghost" size="sm" onClick={() => setShowCreateDialog(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   New Project
                 </Button>
@@ -1195,6 +1211,47 @@ const Dashboard = () => {
         </div>
       </main>
     </div>
+
+    <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create New Project</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="project-name">Project Name</Label>
+            <Input
+              id="project-name"
+              placeholder={`New Project ${projects.length + 1}`}
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCreateProject(); }}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="project-type">Project Type</Label>
+            <Select value={newProjectType} onValueChange={setNewProjectType}>
+              <SelectTrigger id="project-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {projectTypes.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
+          <Button variant="hero" onClick={handleCreateProject} disabled={creatingProject}>
+            {creatingProject ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Create Project
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 
