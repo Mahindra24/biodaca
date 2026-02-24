@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Project {
   id: string;
@@ -326,6 +327,7 @@ const Dashboard = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectType, setNewProjectType] = useState('Genomic');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
   const [creatingProject, setCreatingProject] = useState(false);
 
   const projectTypes = ['Genomic', 'Proteomic', 'Transcriptomic', 'Metabolomic', 'Epigenomic', 'Metagenomic', 'Other'];
@@ -341,6 +343,7 @@ const Dashboard = () => {
         user_id: user.id,
         name,
         type: newProjectType,
+        description: newProjectDescription.trim() || null,
         status: 'pending'
       });
 
@@ -354,6 +357,7 @@ const Dashboard = () => {
     setShowCreateDialog(false);
     setNewProjectName('');
     setNewProjectType('Genomic');
+    setNewProjectDescription('');
   };
 
   const totalProjects = projects.length;
@@ -1240,6 +1244,16 @@ const Dashboard = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="project-description">Description (optional)</Label>
+            <Textarea
+              id="project-description"
+              placeholder="Briefly describe your project..."
+              value={newProjectDescription}
+              onChange={(e) => setNewProjectDescription(e.target.value)}
+              rows={3}
+            />
           </div>
         </div>
         <DialogFooter>
