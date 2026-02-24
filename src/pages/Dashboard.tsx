@@ -319,8 +319,15 @@ const Dashboard = () => {
     if (error) {
       toast.error('Failed to update project status');
     } else {
+      const project = projects.find(p => p.id === projectId);
       toast.success('Project status updated');
       setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status: newStatus } : p));
+      // Send notification (fire-and-forget)
+      if (project) {
+        supabase.functions.invoke('send-project-notification', {
+          body: { event: 'status_changed', project_name: project.name, old_status: project.status, new_status: newStatus },
+        }).catch(() => {});
+      }
     }
   };
 
@@ -352,6 +359,10 @@ const Dashboard = () => {
     } else {
       toast.success('Project created!');
       fetchProjects();
+      // Send notification (fire-and-forget)
+      supabase.functions.invoke('send-project-notification', {
+        body: { event: 'project_created', project_name: name, project_type: newProjectType },
+      }).catch(() => {});
     }
     setCreatingProject(false);
     setShowCreateDialog(false);

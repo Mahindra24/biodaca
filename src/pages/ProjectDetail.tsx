@@ -127,6 +127,12 @@ const ProjectDetail = () => {
         toast.error(`Failed to save ${file.name} record`);
       } else {
         toast.success(`${file.name} uploaded`);
+        // Send notification (fire-and-forget)
+        if (project) {
+          supabase.functions.invoke('send-project-notification', {
+            body: { event: 'file_uploaded', project_name: project.name, file_name: file.name, file_size: file.size },
+          }).catch(() => {});
+        }
       }
     }
 
