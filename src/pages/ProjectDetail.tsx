@@ -16,6 +16,7 @@ interface Project {
   name: string;
   type: string;
   status: string;
+  description: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -238,6 +239,9 @@ const ProjectDetail = () => {
               <span className="text-sm font-medium capitalize">{project.status.replace('-', ' ')}</span>
             </div>
           </div>
+          {project.description && (
+            <p className="mt-3 text-sm text-muted-foreground max-w-2xl">{project.description}</p>
+          )}
         </div>
       </header>
 
