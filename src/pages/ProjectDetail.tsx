@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   ArrowLeft, Dna, Upload, FileText, Trash2, 
-  Loader2, Download, Clock, CheckCircle, AlertCircle
+  Loader2, Download, Clock, CheckCircle, AlertCircle, Pencil, Check as CheckIcon, X
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -41,6 +42,8 @@ const ProjectDetail = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionValue, setDescriptionValue] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -239,8 +242,41 @@ const ProjectDetail = () => {
               <span className="text-sm font-medium capitalize">{project.status.replace('-', ' ')}</span>
             </div>
           </div>
-          {project.description && (
-            <p className="mt-3 text-sm text-muted-foreground max-w-2xl">{project.description}</p>
+          {editingDescription ? (
+            <div className="mt-3 max-w-2xl space-y-2">
+              <Textarea
+                value={descriptionValue}
+                onChange={(e) => setDescriptionValue(e.target.value)}
+                placeholder="Add a project description..."
+                rows={3}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button size="sm" variant="hero" onClick={async () => {
+                  const desc = descriptionValue.trim() || null;
+                  const { error } = await supabase.from('projects').update({ description: desc }).eq('id', project.id);
+                  if (!error) {
+                    setProject({ ...project, description: desc });
+                    toast.success('Description updated');
+                  } else {
+                    toast.error('Failed to update description');
+                  }
+                  setEditingDescription(false);
+                }}>
+                  <CheckIcon className="h-3 w-3 mr-1" /> Save
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingDescription(false)}>
+                  <X className="h-3 w-3 mr-1" /> Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3 max-w-2xl group/desc flex items-start gap-2 cursor-pointer" onClick={() => { setDescriptionValue(project.description || ''); setEditingDescription(true); }}>
+              <p className="text-sm text-muted-foreground">
+                {project.description || 'Add a description...'}
+              </p>
+              <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity mt-0.5 shrink-0" />
+            </div>
           )}
         </div>
       </header>
