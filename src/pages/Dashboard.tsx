@@ -33,6 +33,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import NotificationCenter from '@/components/NotificationCenter';
 
 interface Project {
   id: string;
@@ -322,7 +323,17 @@ const Dashboard = () => {
       const project = projects.find(p => p.id === projectId);
       toast.success('Project status updated');
       setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status: newStatus } : p));
-      // Send notification (fire-and-forget)
+      // In-app notification
+      if (project && user) {
+        supabase.from('notifications').insert({
+          user_id: user.id,
+          type: 'status_changed',
+          title: 'Status Updated',
+          message: `"${project.name}" changed from ${project.status} to ${newStatus}.`,
+          metadata: { old_status: project.status, new_status: newStatus },
+        }).then(() => {});
+      }
+      // Send email notification (fire-and-forget)
       if (project) {
         supabase.functions.invoke('send-project-notification', {
           body: { event: 'status_changed', project_name: project.name, old_status: project.status, new_status: newStatus },
@@ -359,7 +370,15 @@ const Dashboard = () => {
     } else {
       toast.success('Project created!');
       fetchProjects();
-      // Send notification (fire-and-forget)
+      // In-app notification
+      supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'project_created',
+        title: 'Project Created',
+        message: `"${name}" (${newProjectType}) has been created.`,
+        metadata: { project_type: newProjectType },
+      }).then(() => {});
+      // Send email notification (fire-and-forget)
       supabase.functions.invoke('send-project-notification', {
         body: { event: 'project_created', project_name: name, project_type: newProjectType },
       }).catch(() => {});
@@ -607,10 +626,7 @@ const Dashboard = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-dna-accent rounded-full" />
-            </button>
+            <NotificationCenter />
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-gradient-dna flex items-center justify-center">
                 {isAdmin ? (
